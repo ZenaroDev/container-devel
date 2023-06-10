@@ -1,5 +1,4 @@
 name: Zenaro 38 OCI Build
-
 on:
   pull_request:
     branches:
@@ -17,7 +16,6 @@ on:
       - "**.md"
       - "**.txt"
   workflow_dispatch:
-
 env:
   IMAGE_BASE_NAME: devel
   IMAGE_REGISTRY: ghcr.io/${{ github.repository_owner }}
