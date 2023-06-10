@@ -1,8 +1,9 @@
-name: ostree-containers-build
+name: Zenaro 38 OCI Build
+
 on:
   pull_request:
     branches:
-      - devel
+      - 38
     paths-ignore:
       - "**.md"
       - "**.txt"
@@ -16,9 +17,10 @@ on:
       - "**.md"
       - "**.txt"
   workflow_dispatch:
+
 env:
-    IMAGE_BASE_NAME: devel
-    IMAGE_REGISTRY: ghcr.io/${{ github.repository_owner }}
+  IMAGE_BASE_NAME: devel
+  IMAGE_REGISTRY: ghcr.io/${{ github.repository_owner }}
 
 jobs:
   push-ghcr:
@@ -31,21 +33,23 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
+        major_version: [ ${{ steps.set-major-version.outputs.major_version }} ]
         image_name: [gahnite, hypersthene, kinoite, sphene]
-        major_version: [38, rawhide]
         include:
-          - major_version: 38
+          - major_version: ${{ steps.set-major-version.outputs.major_version }}
             is_latest_version: true
             is_stable_version: true
-          - major_version: rawhide
-            is_latest_version: true
-            is_stable_version: false
-    steps: 
+    steps:
+      - name: Set major version
+        id: set-major-version
+        run: echo "major_version=$(echo $GITHUB_REF | awk -F'/' '{print $NF}')" >> $GITHUB_ENV 
+
       # Checkout push-to-registry action GitHub repository
       - name: Checkout Push to Registry action
         uses: actions/checkout@v3
 
-      - name: Matrix Variables
+      - name: Matrix Variables      
+        - name: Matrix Variables
         run: |
           if [[ "${{ matrix.image_name }}" == "gahnite" ]]; then
               echo "SOURCE_IMAGE=silverblue" >> $GITHUB_ENV
@@ -186,4 +190,3 @@ jobs:
         if: github.event_name != 'pull_request'
         run: |
           echo "${{ toJSON(steps.push.outputs) }}"
-
