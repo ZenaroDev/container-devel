@@ -39,22 +39,15 @@ jobs:
       contents: read
       packages: write
       id-token: write
-    steps:
-      - name: Build and push image
-        run: |
-          # Your build and push commands go here
-          echo "Building and pushing image"
-        env:
-          MAJOR_VERSION: ${{ needs.set-major-version.outputs.major_version }}
-        strategy:
-          fail-fast: false
-          matrix:
-            major_version: [ ${{ needs.set-major-version.outputs.major_version }} ]
-            image_name: [gahnite, hypersthene, kinoite, sphene]
-            include:
-              - major_version: ${{ needs.set-major-version.outputs.major_version }}
-                is_latest_version: true
-                is_stable_version: true
+    strategy:
+       fail-fast: false
+       matrix:
+        major_version: ${{ needs.set-major-version.outputs.major_version }}
+        image_name: [gahnite, hypersthene, kinoite, sphene]
+        include:
+           - major_version: ${{ needs.set-major-version.outputs.major_version }}
+             is_latest_version: true
+             is_stable_version: true
     steps: 
       # Checkout push-to-registry action GitHub repository
       - name: Checkout Push to Registry action
