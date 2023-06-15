@@ -29,8 +29,7 @@ jobs:
     steps:
       - name: Set major version
         id: set-major-version
-        run: echo "major_version=$(echo $GITHUB_REF | awk -F'/' '{print $NF}')" >> $GITHUB_ENV
-
+        run: echo "::set-output name=major_version::$(echo $GITHUB_REF | awk -F'/' '{print $NF}')"
   push-ghcr:
     name: Build and push image
     needs: set-major-version
