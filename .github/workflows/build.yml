@@ -3,7 +3,7 @@ name: ostree-containers-build
 on:
   pull_request:
     branches:
-      - 38
+      - "38"
     paths-ignore:
       - "**.md"
       - "**.txt"
@@ -30,6 +30,9 @@ jobs:
       - name: Set major version
         id: set-major-version
         run: echo "::set-output name=major_version::$(echo $GITHUB_REF | awk -F'/' '{print $NF}')"
+    outputs:
+      major_version: ${{ steps.set-major-version.outputs.major_version }}
+        
   push-ghcr:
     name: Build and push image
     needs: set-major-version
