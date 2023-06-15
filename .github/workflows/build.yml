@@ -1,4 +1,5 @@
 name: ostree-containers-build
+
 on:
   pull_request:
     branches:
@@ -16,36 +17,42 @@ on:
       - "**.md"
       - "**.txt"
   workflow_dispatch:
+
 env:
-    IMAGE_BASE_NAME: devel
-    IMAGE_REGISTRY: ghcr.io/${{ github.repository_owner }}
+  IMAGE_BASE_NAME: devel
+  IMAGE_REGISTRY: ghcr.io/${{ github.repository_owner }}
 
 jobs:
+  set-major-version:
+    name: Set Major Version
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Set major version
+        id: set-major-version
+        run: echo "major_version=$(echo $GITHUB_REF | awk -F'/' '{print $NF}')" >> $GITHUB_ENV
+
   push-ghcr:
     name: Build and push image
+    needs: set-major-version
     runs-on: ubuntu-22.04
     permissions:
       contents: read
       packages: write
       id-token: write
     steps:
-      - name: Set major version
-        id: set-major-version
-        run: echo "major_version=$(echo $GITHUB_REF | awk -F'/' '{print $NF}')" >> $GITHUB_ENV
-
       - name: Build and push image
         run: |
           # Your build and push commands go here
           echo "Building and pushing image"
         env:
-          MAJOR_VERSION: ${{ steps.set-major-version.outputs.major_version }}
+          MAJOR_VERSION: ${{ needs.set-major-version.outputs.major_version }}
         strategy:
           fail-fast: false
           matrix:
-            major_version: [ ${{ steps.set-major-version.outputs.major_version }} ]
+            major_version: [ ${{ needs.set-major-version.outputs.major_version }} ]
             image_name: [gahnite, hypersthene, kinoite, sphene]
             include:
-              - major_version: ${{ steps.set-major-version.outputs.major_version }}
+              - major_version: ${{ needs.set-major-version.outputs.major_version }}
                 is_latest_version: true
                 is_stable_version: true
     steps: 
