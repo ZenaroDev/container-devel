@@ -41,7 +41,7 @@ jobs:
     strategy:
        fail-fast: false
        matrix:
-        major_version: ${{ fromJSON(needs.set-major-version.outputs.outputs).major_version }}
+        major_version: "${{ fromJSON(needs.set-major-version.outputs.outputs).major_version }}"
         image_name: [gahnite, hypersthene, kinoite, sphene]
         include:
            - major_version: ${{ needs.set-major-version.outputs.major_version }}
