@@ -2,7 +2,7 @@ name: ostree-containers-build
 on:
   pull_request:
     branches:
-      - devel
+      - 38
     paths-ignore:
       - "**.md"
       - "**.txt"
@@ -28,18 +28,27 @@ jobs:
       contents: read
       packages: write
       id-token: write
-    strategy:
-      fail-fast: false
-      matrix:
-        image_name: [gahnite, hypersthene, kinoite, sphene]
-        major_version: [38, rawhide]
-        include:
-          - major_version: 38
-            is_latest_version: true
-            is_stable_version: true
-          - major_version: rawhide
-            is_latest_version: true
-            is_stable_version: false
+    steps:
+      - name: Set major version
+        id: set-major-version
+        run: echo "major_version=$(echo $GITHUB_REF | awk -F'/' '{print $NF}')" >> $GITHUB_ENV
+
+      - name: Build and push image
+        run: |
+          # Your build and push commands go here
+          echo "Building and pushing image"
+        env:
+          MAJOR_VERSION: ${{ steps.set-major-version.outputs.major_version }}
+
+        strategy:
+          fail-fast: false
+          matrix:
+            major_version: [ ${{ steps.set-major-version.outputs.major_version }} ]
+            image_name: [gahnite, hypersthene, kinoite, sphene]
+            include:
+              - major_version: ${{ steps.set-major-version.outputs.major_version }}
+                is_latest_version: true
+                is_stable_version: true
     steps: 
       # Checkout push-to-registry action GitHub repository
       - name: Checkout Push to Registry action
