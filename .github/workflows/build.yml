@@ -39,7 +39,6 @@ jobs:
           echo "Building and pushing image"
         env:
           MAJOR_VERSION: ${{ steps.set-major-version.outputs.major_version }}
-
         strategy:
           fail-fast: false
           matrix:
