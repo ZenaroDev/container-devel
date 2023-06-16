@@ -50,14 +50,14 @@ jobs:
        matrix:
         image_name: [gahnite, hypersthene, kinoite, sphene]
         include:
-          - image_name: gahnite
-             source_image: silverblue
-          - image_name: hypersthene
-             source_Image: base
-          - image_name: kinoite
-             source_image: kinoite
-          - image_name: sphene
-             source_image: sericea
+          - source_image: silverblue 
+             image_name: gahnite
+          - source_image: base
+             image_name: hypersthene
+          - source_image: kinoite
+             image_name: kinoite
+          - source_image: sericea
+             image_name: sphene
 
     steps: 
       # Checkout push-to-registry action GitHub repository
