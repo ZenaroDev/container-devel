@@ -1,4 +1,4 @@
-name: ostree-containers-build
+name: ZenaroOS 38 OCI 
 
 on:
   pull_request:
@@ -19,7 +19,6 @@ on:
   workflow_dispatch:
 
 env:
-  IMAGE_BASE_NAME: devel
   IMAGE_REGISTRY: ghcr.io/${{ github.repository_owner }}
 
 jobs:
@@ -29,9 +28,14 @@ jobs:
     steps:
       - name: Set major version
         id: set-major-version
-        run: echo "::set-output name=major_version::$(echo $GITHUB_REF | awk -F'/' '{print $NF}')"
-    outputs:
-      major_version: ${{ steps.set-major-version.outputs.major_version }}
+        run: |
+          MAJOR_VERSION=$(echo $GITHUB_REF | awk -F'/' '{print $NF}')
+          if [[ $MAJOR_VERSION == "38" ]]; then
+              echo "IS_LATEST_STABLE=true" >> $GITHUB_ENV
+          else
+              echo "IS_LATEST_STABLE=false" >> $GITHUB_ENV
+          fi
+
         
   push-ghcr:
     name: Build and push image
@@ -44,12 +48,17 @@ jobs:
     strategy:
        fail-fast: false
        matrix:
-        major_version: [38]
         image_name: [gahnite, hypersthene, kinoite, sphene]
         include:
-           - major_version: ${{ needs.set-major-version.outputs.major_version }}
-             is_latest_version: true
-             is_stable_version: true
+          - image_name: gahnite
+             source_image: silverblue
+          - image_name: hypersthene
+             source_Image: base
+          - image_name: kinoite
+             source_image: kinoite
+          - image_name: sphene
+             source_image: sericea
+
     steps: 
       # Checkout push-to-registry action GitHub repository
       - name: Checkout Push to Registry action
@@ -57,16 +66,8 @@ jobs:
 
       - name: Matrix Variables
         run: |
-          if [[ "${{ matrix.image_name }}" == "gahnite" ]]; then
-              echo "SOURCE_IMAGE=silverblue" >> $GITHUB_ENV
-          elif [[ "${{ matrix.image_name }}" == "hypersthene" ]]; then
-              echo "SOURCE_IMAGE=base" >> $GITHUB_ENV
-          elif [[ "${{ matrix.image_name }}" == "sphene" ]]; then
-              echo "SOURCE_IMAGE=sericea" >> $GITHUB_ENV
-          else
-              echo "SOURCE_IMAGE=${{ matrix.image_name }}" >> $GITHUB_ENV
-          fi
-          echo "IMAGE_NAME=${{ format('{0}-{1}', matrix.image_name, env.IMAGE_BASE_NAME) }}" >> $GITHUB_ENV
+          echo "SOURCE_IMAGE=${{ matrix.source_image}}" >> $GITHUB_ENV
+          echo "IMAGE_NAME=${{ matrix.image_name}}" >> $GITHUB_ENV
 
       - name: Generate tags
         id: generate-tags
@@ -74,25 +75,23 @@ jobs:
         run: |
           # Generate a timestamp for creating an image version history
           TIMESTAMP="$(date +%Y%m%d)"
-          MAJOR_VERSION="${{ matrix.major_version }}"
+          MAJOR_VERSION="${{ env.MAJOR_VERSION}}"
+          IS_LATEST_STABLE="${{ env.IS_LATEST_STABLE}}"
           COMMIT_TAGS=()
           BUILD_TAGS=()
           # Have tags for tracking builds during pull request
           SHA_SHORT="${GITHUB_SHA::7}"
           COMMIT_TAGS+=("pr-${{ github.event.number }}-${MAJOR_VERSION}")
           COMMIT_TAGS+=("${SHA_SHORT}-${MAJOR_VERSION}")
-          if [[ "${{ matrix.is_latest_version }}" == "true" ]] && \
-             [[ "${{ matrix.is_stable_version }}" == "true" ]]; then
+          if
+             [[ $IS_LATEST_STABLE == "true" ]]; then
               COMMIT_TAGS+=("pr-${{ github.event.number }}")
               COMMIT_TAGS+=("${SHA_SHORT}")
+              BUILD_TAGS+=("latest")
+
           fi
 
           BUILD_TAGS=("${MAJOR_VERSION}" "${MAJOR_VERSION}-${TIMESTAMP}")
-
-          if [[ "${{ matrix.is_latest_version }}" == "true" ]] && \
-             [[ "${{ matrix.is_stable_version }}" == "true" ]]; then
-              BUILD_TAGS+=("latest")
-          fi
 
           if [[ "${{ github.event_name }}" == "pull_request" ]]; then
               echo "Generated the following commit tags: "
@@ -112,7 +111,7 @@ jobs:
       - name: Get current version
         id: labels
         run: |
-          ver=$(skopeo inspect docker://quay.io/fedora-ostree-desktops/${{ env.SOURCE_IMAGE }}:${{ matrix.major_version }} | jq -r '.Labels["org.opencontainers.image.version"]')
+          ver=$(skopeo inspect docker://quay.io/fedora-ostree-desktops/${{ env.SOURCE_IMAGE }}:${{ env.MAJOR_VERSION }} | jq -r '.Labels["org.opencontainers.image.version"]')
           echo "VERSION=$ver" >> $GITHUB_OUTPUT
 
       # Build metadata
@@ -142,7 +141,7 @@ jobs:
           build-args: |
             IMAGE_NAME=${{ matrix.image_name }}
             SOURCE_IMAGE=${{ env.SOURCE_IMAGE }}
-            FEDORA_MAJOR_VERSION=${{ matrix.major_version }}
+            FEDORA_MAJOR_VERSION=${{ env.MAJOR_VERSION }}
           labels: ${{ steps.meta.outputs.labels }}
           oci: false
 
